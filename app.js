@@ -1,5 +1,8 @@
+// app.js
+
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import fetch from "node-fetch";
 
@@ -10,6 +13,7 @@ const app = express();
 const port = process.env.PORT || 3001;
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 
+app.use(cors());
 app.use(express.json());
 
 // GET /trips : pour récupérer l'historique des trips.
@@ -23,7 +27,7 @@ app.get("/trips", async (req, res) => {
     }
 });
 
-// GET /trips/:id : pour récupérer un voyage spécifique.
+// GET /trips/:id : pour récupérer un voyage 
 app.get("/trips/:id", async (req, res) => {
     try {
         const tripId = Number(req.params.id);
@@ -71,7 +75,7 @@ app.post("/trips", async (req, res) => {
                     Authorization: `Bearer ${MISTRAL_API_KEY}`,
                 },
                 body: JSON.stringify({
-                    model: "open-mistral-7b",
+                    model: "open-mixtral-8x7b",
                     messages: [{ role: "user", content: prompt }],
                 }),
             }
