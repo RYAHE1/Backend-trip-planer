@@ -1,48 +1,13 @@
 import express from "express";
 import dotenv from "dotenv";
-import fetch from "node-fetch";
 import { PrismaClient } from "@prisma/client";
-
+import fetch from "node-fetch";
 dotenv.config();
 
 const prisma = new PrismaClient();
 const app = express();
 const port = process.env.PORT || 3001;
-
-// Assurez-vous de remplacer 'your_api_key' par votre propre clé API Mistral
-const mistralApiKey = process.env.MISTRAL_API_KEY;
-const mistralApiUrl = 'https://api.mistral.ai/v1/chat/completions'; // Remplacez par l'URL de l'API Mistral
-
-async function generateItinerary(prompt) {
-    try {
-        const response = await fetch(mistralApiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${mistralApiKey}`
-            },
-            body: JSON.stringify({
-                model: 'open-mistral-7b',
-                prompt: prompt,
-                max_tokens: 100,
-                temperature: 0.7,
-                top_p: 1,
-                frequency_penalty: 0,
-                presence_penalty: 0,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return data.choices[0].text;
-    } catch (error) {
-        console.log(error);
-        throw error;
-    }
-}
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY; // Assurez-vous que cette variable d'environnement est définie
 
 app.use(express.json());
 
@@ -81,28 +46,48 @@ app.post("/trips", async (req, res) => {
     }
 
     try {
-        const itinerary = await generateItinerary(prompt);
+        // Envoyer une requête à l'API Mistral
+        const mistralResponse = await fetch(
+            "https://api.mistral.ai/v1/chat/completions",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    Authorization: `Bearer ${MISTRAL_API_KEY}`,
+                },
+                body: JSON.stringify({
+                    model: "open-mistral-7b",
+                    messages: [{ role: "user", content: prompt }],
+                }),
+            }
+        );
+
+        const mistralData = await mistralResponse.json();
+
+        // Utiliser la réponse de l'API Mistral pour créer un nouveau voyage
         const trip = await prisma.trip.create({
-            data: { prompt, itinerary },
+            data: { prompt, output: mistralData.choices[0].message.content },
         });
+
         res.status(200).json(trip);
     } catch (error) {
         console.log(error);
         res.status(500).json({});
     }
 });
-
 // PATCH /trips/:id : pour modifier un voyage existant.
 app.patch("/trips/:id", async (req, res) => {
     try {
+        const { prompt } = req.body;
         const trip = await prisma.trip.update({
             where: { id: Number(req.params.id) },
-            data: req.body,
+            data: { prompt },
         });
         res.status(200).json(trip);
     } catch (error) {
         console.log(error);
-        res.status(500).json({});
+        res.status(500).json({ error: "Une erreur s'est produite lors de la mise à jour du voyage." });
     }
 });
 
