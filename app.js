@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import https from "https";
+import fetch from "node-fetch";
 import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
@@ -13,54 +13,35 @@ const port = process.env.PORT || 3001;
 const mistralApiKey = 'iZNLEK4woJQqj5Rer3W5oI9NGuMcs4Mk';
 const mistralApiUrl = 'https://api.mistral.ai/v1/chat/completions'; // Remplacez par l'URL de l'API Mistral
 
-function generateItinerary(prompt) {
-    return new Promise((resolve, reject) => {
-        const requestOptions = {
-            hostname: mistralApiUrl,
-            path: '/v1/chat/completions',
+async function generateItinerary(prompt) {
+    try {
+        const response = await fetch(mistralApiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${mistralApiKey}`
-            }
-        };
-
-        const req = https.request(requestOptions, (res) => {
-            if (res.statusCode < 200 || res.statusCode >= 300) {
-                return reject(new Error(`HTTP error! status: ${res.statusCode}`));
-            }
-
-            let data = '';
-            res.on('data', (chunk) => {
-                data += chunk;
-            });
-
-            res.on('end', () => {
-                try {
-                    const parsedData = JSON.parse(data);
-                    resolve(parsedData.choices[0].text);
-                } catch (error) {
-                    reject(error);
-                }
-            });
+            },
+            body: JSON.stringify({
+                model: 'open-mistral-7b',
+                prompt: prompt,
+                max_tokens: 100,
+                temperature: 0.7,
+                top_p: 1,
+                frequency_penalty: 0,
+                presence_penalty: 0,
+            }),
         });
 
-        req.on('error', (error) => {
-            reject(error);
-        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        req.write(JSON.stringify({
-            model: 'open-mistral-7b',
-            prompt: prompt,
-            max_tokens: 100,
-            temperature: 0.7,
-            top_p: 1,
-            frequency_penalty: 0,
-            presence_penalty: 0,
-        }));
-
-        req.end();
-    });
+        const data = await response.json();
+        return data.choices[0].text;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
 }
 
 app.use(express.json());
