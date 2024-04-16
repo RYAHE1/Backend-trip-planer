@@ -10,7 +10,7 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // Assurez-vous de remplacer 'your_api_key' par votre propre clé API Mistral
-const mistralApiKey = 'iZNLEK4woJQqj5Rer3W5oI9NGuMcs4Mk';
+const mistralApiKey = process.env.MISTRAL_API_KEY;
 const mistralApiUrl = 'https://api.mistral.ai/v1/chat/completions'; // Remplacez par l'URL de l'API Mistral
 
 async function generateItinerary(prompt) {
