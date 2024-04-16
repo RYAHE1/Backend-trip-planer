@@ -2,16 +2,15 @@ import express from "express";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import fetch from "node-fetch";
+
 dotenv.config();
 
 const prisma = new PrismaClient();
 const app = express();
 const port = process.env.PORT || 3001;
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY; // Assurez-vous que cette variable d'environnement est définie
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 
 app.use(express.json());
-
-// Routes
 
 // GET /trips : pour récupérer l'historique des trips.
 app.get("/trips", async (req, res) => {
@@ -20,20 +19,31 @@ app.get("/trips", async (req, res) => {
         res.status(200).json(trips);
     } catch (error) {
         console.log(error);
-        res.status(500).json({});
+        res.status(500).json({ error: "Une erreur s'est produite lors de la récupération des voyages." });
     }
 });
 
 // GET /trips/:id : pour récupérer un voyage spécifique.
 app.get("/trips/:id", async (req, res) => {
     try {
+        const tripId = Number(req.params.id);
+
+        if (isNaN(tripId)) {
+            return res.status(400).json({ error: "L'identifiant du voyage doit être un nombre." });
+        }
+
         const trip = await prisma.trip.findUnique({
-            where: { id: Number(req.params.id) },
+            where: { id: tripId },
         });
+
+        if (!trip) {
+            return res.status(404).json({ error: "Le voyage demandé n'existe pas." });
+        }
+
         res.status(200).json(trip);
     } catch (error) {
         console.log(error);
-        res.status(500).json({});
+        res.status(500).json({ error: "Une erreur s'est produite lors de la récupération du voyage." });
     }
 });
 
@@ -47,6 +57,10 @@ app.post("/trips", async (req, res) => {
 
     try {
         // Envoyer une requête à l'API Mistral
+        if (!MISTRAL_API_KEY) {
+            throw new Error("MISTRAL_API_KEY is not defined.");
+        }
+
         const mistralResponse = await fetch(
             "https://api.mistral.ai/v1/chat/completions",
             {
@@ -63,6 +77,10 @@ app.post("/trips", async (req, res) => {
             }
         );
 
+        if (!mistralResponse.ok) {
+            throw new Error(`API Mistral returned status ${mistralResponse.status}`);
+        }
+
         const mistralData = await mistralResponse.json();
 
         // Utiliser la réponse de l'API Mistral pour créer un nouveau voyage
@@ -73,18 +91,30 @@ app.post("/trips", async (req, res) => {
         res.status(200).json(trip);
     } catch (error) {
         console.log(error);
-        res.status(500).json({});
+        res.status(500).json({ error: "Une erreur s'est produite lors de la création du voyage." });
     }
 });
+
 // PATCH /trips/:id : pour modifier un voyage existant.
 app.patch("/trips/:id", async (req, res) => {
     try {
         const { prompt } = req.body;
-        const trip = await prisma.trip.update({
-            where: { id: Number(req.params.id) },
+        const tripId = Number(req.params.id);
+
+        if (isNaN(tripId)) {
+            return res.status(400).json({ error: "L'identifiant du voyage doit être un nombre." });
+        }
+
+        const updatedTrip = await prisma.trip.update({
+            where: { id: tripId },
             data: { prompt },
         });
-        res.status(200).json(trip);
+
+        if (!updatedTrip) {
+            return res.status(404).json({ error: "Le voyage demandé n'existe pas." });
+        }
+
+        res.status(200).json(updatedTrip);
     } catch (error) {
         console.log(error);
         res.status(500).json({ error: "Une erreur s'est produite lors de la mise à jour du voyage." });
