@@ -23,7 +23,7 @@ app.get("/trips", async (req, res) => {
         res.status(200).json(trips);
     } catch (error) {
         console.log(error);
-        res.status(500).json({ error: "Une erreur s'est produite lors de la récupération des voyages." });
+        res.status(500).json({ error: "Une erreur s'est produite" });
     }
 });
 
@@ -47,7 +47,7 @@ app.get("/trips/:id", async (req, res) => {
         res.status(200).json(trip);
     } catch (error) {
         console.log(error);
-        res.status(500).json({ error: "Une erreur s'est produite lors de la récupération du voyage." });
+        res.status(500).json({ error: "Une erreur s'est produite" });
     }
 });
 
@@ -56,7 +56,7 @@ app.post("/trips", async (req, res) => {
     const { prompt } = req.body;
 
     if (!prompt) {
-        return res.status(400).json({ error: 'The field "prompt" is required.' });
+        return res.status(400).json({ error: 'une phrase est demander' });
     }
 
     try {
@@ -95,7 +95,7 @@ app.post("/trips", async (req, res) => {
         res.status(200).json(trip);
     } catch (error) {
         console.log(error);
-        res.status(500).json({ error: "Une erreur s'est produite lors de la création du voyage." });
+        res.status(500).json({ error: "Une erreur s'est produite" });
     }
 });
 
@@ -121,7 +121,7 @@ app.patch("/trips/:id", async (req, res) => {
         res.status(200).json(updatedTrip);
     } catch (error) {
         console.log(error);
-        res.status(500).json({ error: "Une erreur s'est produite lors de la mise à jour du voyage." });
+        res.status(500).json({ error: "Une erreur s'est produite" });
     }
 });
 
