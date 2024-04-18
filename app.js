@@ -21,6 +21,9 @@ app.get("/trips", async (req, res) => {
     try {
         const trips = await prisma.trip.findMany();
         res.status(200).json(trips);
+
+        // un tri par date desc
+        // limiter le nb de resultats à 5
     } catch (error) {
         console.log(error);
         res.status(500).json({ error: "Une erreur s'est produite" });
@@ -114,7 +117,7 @@ app.patch("/trips/:id", async (req, res) => {
 
         const updatedTrip = await prisma.trip.update({
             where: { id: tripId },
-            data: { prompt },
+            data: { prompt, updatedAt: new Date() },
         });
 
         if (!updatedTrip) {
