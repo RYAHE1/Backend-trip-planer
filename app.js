@@ -1,5 +1,3 @@
-// app.js
-
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -9,9 +7,11 @@ import fetch from "node-fetch";
 dotenv.config();
 
 const prisma = new PrismaClient();
-const app = express();
+export const app = express();
 const port = process.env.PORT || 3001;
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+const MISTRAL_API_ENDPOINT = process.env.MISTRAL_API_ENDPOINT;
+const MISTRAL_MODEL = process.env.MISTRAL_MODEL;
 
 app.use(cors());
 app.use(express.json());
@@ -71,7 +71,7 @@ app.post("/trips", async (req, res) => {
         }
 
         const mistralResponse = await fetch(
-            "https://api.mistral.ai/v1/chat/completions",
+            MISTRAL_API_ENDPOINT,
             {
                 method: "POST",
                 headers: {
@@ -80,7 +80,7 @@ app.post("/trips", async (req, res) => {
                     Authorization: `Bearer ${MISTRAL_API_KEY}`,
                 },
                 body: JSON.stringify({
-                    model: "mistral-small-latest",
+                    model: MISTRAL_MODEL,
                     messages: [{ role: "user", content: prePrompt + " " + prompt }],
                 }),
             }
@@ -132,5 +132,5 @@ app.patch("/trips/:id", async (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`http://127.0.0.1:${port}`);
+    console.log(`Server running at ${process.env.APP_URL}`);
 });
